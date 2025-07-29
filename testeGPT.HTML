@@ -1,0 +1,190 @@
+<!DOCTYPE html><html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Clima em Palmares</title>
+  <meta http-equiv="refresh" content="1800"> <!-- Atualiza a cada 30 minutos -->
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      width: 256px;
+      height: 512px;
+      background-color: #007bff;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+    }
+    .city {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .day {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 5px;
+      width: 100%;
+      text-align: center;
+    }
+    .day-name {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .icon {
+      width: 50px;
+      height: 50px;
+    }
+    .temps {
+      font-size: 16px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="city">Palmares - PE</div>
+    <div id="forecast"></div>
+  </div>  <script>
+    const apiKey = "2575ddf8929c5e6d1fcbe356f1268710";
+    const city = "Palmares,BR";
+
+    async function getForecast() {
+      const res = await fetch(https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric&lang=pt_br);
+      const data = await res.json();
+
+      const forecastEl = document.getElementById("forecast");
+      forecastEl.innerHTML = "";
+
+      const days = {};
+
+      data.list.forEach(entry => {
+        const date = new Date(entry.dt_txt);
+        const day = date.toLocaleDateString("pt-BR", { weekday: 'long' });
+        if (!days[day] && Object.keys(days).length < 3 && date.getHours() === 12) {
+          days[day] = {
+            icon: entry.weather[0].icon,
+            max: Math.round(entry.main.temp_max),
+            min: Math.round(entry.main.temp_min),
+            desc: entry.weather[0].description
+          };
+        }
+      });
+
+      for (const [day, info] of Object.entries(days)) {
+        forecastEl.innerHTML += `
+          <div class="day">
+            <div class="day-name">${day}</div>
+            <img class="icon" src="https://openweathermap.org/img/wn/${info.icon}@2x.png" alt="${info.desc}">
+            <div class="temps">${info.max}° / ${info.min}°</div>
+          </div>
+        `;
+      }
+    }
+
+    getForecast();
+  </script></body>
+</html>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Clima em Palmares</title>
+  <meta http-equiv="refresh" content="1800"> <!-- Atualiza a cada 30 minutos -->
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      width: 256px;
+      height: 512px;
+      background-color: #007bff;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+    }
+    .city {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .day {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 5px;
+      width: 100%;
+      text-align: center;
+    }
+    .day-name {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .icon {
+      width: 50px;
+      height: 50px;
+    }
+    .temps {
+      font-size: 16px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="city">Palmares - PE</div>
+    <div id="forecast"></div>
+  </div>
+
+  <script>
+    const apiKey = "2575ddf8929c5e6d1fcbe356f1268710";
+    const city = "Palmares,BR";
+
+    async function getForecast() {
+      const res = await fetch(https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric&lang=pt_br);
+      const data = await res.json();
+
+      const forecastEl = document.getElementById("forecast");
+      forecastEl.innerHTML = "";
+
+      const days = {};
+
+      data.list.forEach(entry => {
+        const date = new Date(entry.dt_txt);
+        const day = date.toLocaleDateString("pt-BR", { weekday: 'long' });
+        if (!days[day] && Object.keys(days).length < 3 && date.getHours() === 12) {
+          days[day] = {
+            icon: entry.weather[0].icon,
+            max: Math.round(entry.main.temp_max),
+            min: Math.round(entry.main.temp_min),
+            desc: entry.weather[0].description
+          };
+        }
+      });
+
+      for (const [day, info] of Object.entries(days)) {
+        forecastEl.innerHTML += `
+          <div class="day">
+            <div class="day-name">${day}</div>
+            <img class="icon" src="https://openweathermap.org/img/wn/${info.icon}@2x.png" alt="${info.desc}">
+            <div class="temps">${info.max}° / ${info.min}°</div>
+          </div>
+        `;
+      }
+    }
+
+    getForecast();
+  </script>
+</body>
+</html>
