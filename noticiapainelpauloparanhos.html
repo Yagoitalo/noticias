@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=576, height=960, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Notícias – Metrópoles (576×960)</title>
+<link rel="preconnect" href="https://images.weserv.nl">
+<link rel="dns-prefetch" href="https://images.weserv.nl">
+<link rel="preconnect" href="https://api.open-meteo.com">
+<style>
+  :root{
+    --w:576px; --h:960px;
+    --bg:#0b0f17;
+    --panel:#0e1625;
+    --accent:#e11d48;  /* faixa vermelha */
+    --brand:#e11d48;
+    --text:#ffffff;
+    --muted:#cbd5e1;
+    --shadow: 0 20px 60px rgba(0,0,0,.45);
+    --radius: 18px;
+  }
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, "Noto Sans";
+    overflow:hidden;
+  }
+  .root{
+    width:var(--w); height:var(--h); margin:0; position:relative; background:#000;
+    overflow:hidden; /* barra 100% no esquadro */
+  }
+
+  /* Topo (logo) */
+  .topbar{
+    position:absolute; left:0; top:0; width:100%; height:68px;
+    display:flex; align-items:center; padding:0 22px; gap:12px;
+    background:linear-gradient(180deg, rgba(0,0,0,.85), rgba(0,0,0,.35) 60%, transparent);
+    z-index:3; pointer-events:none;
+  }
+  .brand{ font-weight:800; letter-spacing:.5px; font-size:28px; }
+  .brand .m{color:var(--brand); margin-right:3px}
+  .brand .rest{color:#fff}
+  .dot{opacity:.6}
+
+  /* Área de imagem */
+  .hero{
+    position:absolute; left:0; top:0; width:100%; height:64%;
+    background:#0a0a0a; overflow:hidden;
+  }
+  .hero img{
+    width:100%; height:100%; object-fit:cover;
+    filter:contrast(1.05) saturate(1.05) brightness(.98);
+    transform:scale(1.01);
+  }
+
+  /* Fita */
+  .ribbon{
+    position:absolute; top:92px; right:0; z-index:3;
+    background:var(--accent); color:#fff; font-weight:700; letter-spacing:.5px;
+    padding:10px 18px 10px 24px; font-size:22px; clip-path:polygon(12px 0, 100% 0, 100% 100%, 12px 100%, 0 50%);
+    text-transform:uppercase;
+    box-shadow: var(--shadow);
+  }
+
+  /* Título / fonte */
+  .headline{
+    position:absolute; left:24px; right:24px; top:68%;
+    transform:translateY(-18px);
+    font-size:44px; line-height:1.18; font-weight:800; letter-spacing:.2px;
+    text-shadow: 0 2px 16px rgba(0,0,0,.55);
+  }
+  .source{
+    position:absolute; left:24px; top:64%; transform:translateY(-54px);
+    font-size:14px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.8px;
+    background:rgba(0,0,0,.35); padding:6px 10px; border-radius:999px; backdrop-filter: blur(4px);
+  }
+
+  /* Barra de progresso */
+  .progress{
+    position:absolute; left:0; bottom:88px; height:4px; width:100%;
+    background: rgba(255,255,255,.08);
+  }
+  .progress > i{
+    display:block; height:100%; width:0%; background:#fff; opacity:.9;
+    animation: run 10s linear infinite;
+  }
+  @keyframes run { from { width:0% } to { width:100% } }
+
+  /* Rodapé (faixa vermelha) — alinhado */
+  .footer{
+    position:absolute; left:0; bottom:0; width:100%; height:88px; z-index:2;
+    box-sizing:border-box;
+    background:var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px; font-weight:700; letter-spacing:.3px;
+  }
+  .clock{ font-size:28px }
+  .meta{ display:flex; align-items:center; gap:18px; font-size:20px }
+  .chip{ display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.18); padding:8px 12px; border-radius:12px }
+  .chip small{font-weight:600; opacity:.9}
+
+  /* Fallback quando não há imagem */
+  .noimg{
+    background: radial-gradient(120% 80% at 50% 20%, #1f2937, #0b1222);
+    display:flex; align-items:center; justify-content:center; font-size:80px; color:#93c5fd33;
+  }
+
+  /* Anti burn-in */
+  .jitter{ animation:j 120s ease-in-out infinite }
+  @keyframes j { 0%,100% { transform: translate(0,0) } 25% { transform: translate(0,-1px) } 50% { transform: translate(-1px,0) } 75% { transform: translate(0,1px) } }
+</style>
+</head>
+<body>
+<div class="root jitter">
+  <div class="hero" id="hero"><div class="noimg">📰</div></div>
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="m">M</span><span class="rest">ETRÓPOLES</span><span class="dot">.com</span>
+    </div>
+  </div>
+
+  <div class="ribbon" id="ribbon">Últimas</div>
+  <div class="source" id="source">Carregando fonte…</div>
+  <div class="headline" id="headline">Buscando notícias…</div>
+
+  <div class="progress"><i></i></div>
+
+  <div class="footer">
+    <div class="clock" id="clock">--:--</div>
+    <div class="meta">
+      <div class="chip" id="dateChip">📅 <small>--/--</small></div>
+      <div class="chip" id="tempChip">🌡️ <small>-- °C</small></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== CONFIG ===================== */
+const CONFIG = {
+  mainFeed: "https://www.metropoles.com/feed",
+  fallbackFeed: "https://news.google.com/rss/search?q=site:metropoles.com&hl=pt-BR&gl=BR&ceid=BR:pt-BR",
+  corsProxies: [
+    "https://api.allorigins.win/raw?url=",
+    "https://cors.isomorphic-git.org/",
+    "https://thingproxy.freeboard.io/fetch/"
+  ],
+  rotateMs: 10000,
+  refreshFeedMs: 4 * 60 * 1000,
+  weather: { latitude: -8.684, longitude: -35.589 }
+};
+/* ================================================== */
+
+const heroEl   = document.getElementById("hero");
+const headlineEl = document.getElementById("headline");
+const sourceEl = document.getElementById("source");
+const ribbonEl = document.getElementById("ribbon");
+const clockEl  = document.getElementById("clock");
+const dateChip = document.getElementById("dateChip").querySelector("small");
+const tempChip = document.getElementById("tempChip").querySelector("small");
+
+let items = [];
+let idx = 0;
+let rotateTimer = null;
+let feedTimer = null;
+
+const pad = n => (n<10 ? "0"+n : ""+n);
+const decodeHTML = s => { const e = document.createElement("textarea"); e.innerHTML = s || ""; return e.value; };
+const fromSrcset = ss => ss.split(",")[0].trim().split(" ")[0];
+const normalizeUrl = u => {
+  if(!u) return "";
+  u = decodeHTML(u).trim();
+  if(u.startsWith("//")) u = "https:" + u;
+  return u.replace(/&amp;/g,"&");
+};
+const proxify = u => {
+  const clean = encodeURIComponent(u.replace(/^https?:\/\//,""));
+  return `https://images.weserv.nl/?url=${clean}&w=576&h=${Math.round(0.64*960)}&fit=cover&we&il`;
+};
+function withTimeout(promise, ms){
+  return Promise.race([ promise, new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), ms)) ]);
+}
+async function fetchViaProxies(url, timeoutMs=3500){
+  const encoded = encodeURIComponent(url);
+  const attempts = CONFIG.corsProxies.map(base =>
+    withTimeout(fetch(base + (base.endsWith("/")? url : encoded), { cache:"no-store" }), timeoutMs)
+      .then(r=>{ if(!r.ok) throw new Error("bad status"); return r.text(); })
+  );
+  attempts.push(withTimeout(fetch(url, { cache:"no-store" }), 2500).then(r=>{ if(!r.ok) throw new Error("bad status direct"); return r.text(); }));
+  return Promise.any(attempts);
+}
+
+function tickClock(){
+  const now = new Date();
+  clockEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  dateChip.textContent = now.toLocaleDateString("pt-BR", { weekday:"short", day:"2-digit", month:"2-digit" }).replace(/\./g,"");
+}
+setInterval(tickClock, 1000); tickClock();
+
+async function loadTemp(){
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.weather.latitude}&longitude=${CONFIG.weather.longitude}&current_weather=true&timezone=auto`;
+    const r = await fetch(url); const j = await r.json();
+    const t = Math.round(j.current_weather?.temperature ?? NaN);
+    if(!Number.isNaN(t)) tempChip.textContent = `${t} °C`;
+  }catch(_){}
+}
+loadTemp(); setInterval(loadTemp, 15 * 60 * 1000);
+
+function extractImageFromXmlBlock(xmlStr){
+  if(!xmlStr) return "";
+  const html = decodeHTML(xmlStr);
+  let m =
+    html.match(/<media:content[^>]*url="([^"]+)"/i) ||
+    html.match(/<media:thumbnail[^>]*url="([^"]+)"/i) ||
+    html.match(/<enclosure[^>]*url="([^"]+)"/i);
+  if(m) return normalizeUrl(m[1]);
+  m = html.match(/<img[^>]+srcset="([^"]+)"/i);
+  if(m) return normalizeUrl(fromSrcset(m[1]));
+  m = html.match(/<img[^>]+src="([^"]+)"/i);
+  if(m) return normalizeUrl(m[1]);
+  return "";
+}
+
+function parseItems(xmlText, forceSourceLabel){
+  const doc = new DOMParser().parseFromString(xmlText, "text/xml");
+  const nodeItems = Array.from(doc.querySelectorAll("item")).slice(0, 18);
+  const out = nodeItems.map(n => {
+    const title = (n.querySelector("title")?.textContent || "").replace(/\s+/g," ").trim();
+    const link  = n.querySelector("link")?.textContent || "";
+    let source = forceSourceLabel || n.querySelector("source")?.textContent || new URL(link||location.href).host;
+    let img = "";
+    const imgNode = n.querySelector("media\\:content[url], media\\:group > media\\:content[url], media\\:thumbnail[url], enclosure[url]");
+    img = imgNode?.getAttribute("url") || "";
+    if(!img){
+      const desc = n.querySelector("description")?.textContent || "";
+      img = extractImageFromXmlBlock(desc);
+    }
+    if(!img){
+      const contentEnc = n.getElementsByTagName("content:encoded")?.[0]?.textContent || "";
+      img = extractImageFromXmlBlock(contentEnc);
+    }
+    if(!img){
+      img = extractImageFromXmlBlock(n.outerHTML || "");
+    }
+    img = img ? proxify(img) : "";
+    return { title, link, source, img };
+  }).filter(it => it.title && (!forceSourceLabel || it.link.includes("metropoles.com")));
+  return out;
+}
+
+async function fetchMetropolesOnly(){
+  try{
+    const txt = await fetchViaProxies(CONFIG.mainFeed, 3000);
+    const parsed = parseItems(txt, "Metrópoles");
+    if(parsed.length) return parsed;
+  }catch(_){}
+  try{
+    const txt = await fetchViaProxies(CONFIG.fallbackFeed, 3500);
+    const parsed = parseItems(txt, "Metrópoles");
+    if(parsed.length) return parsed;
+  }catch(_){}
+  throw new Error("Falha para obter RSS do Metrópoles");
+}
+
+function showCurrent(){
+  const it = items[idx % items.length];
+  headlineEl.textContent = it.title;
+  sourceEl.textContent = "METRÓPOLES";
+  ribbonEl.textContent = "Últimas";
+  heroEl.innerHTML = `<div class="noimg">📰</div>`;
+  if(!it.img) return;
+  const img = new Image();
+  img.alt = ""; img.decoding = "async"; img.loading = "eager";
+  img.fetchPriority = idx === 0 ? "high" : "auto";
+  img.referrerPolicy = "no-referrer";
+  const to = setTimeout(()=>{ img.src=""; heroEl.innerHTML = `<div class="noimg">📰</div>`; }, 4000);
+  img.onload = ()=>{ clearTimeout(to); heroEl.innerHTML=""; heroEl.appendChild(img); };
+  img.onerror = ()=>{ clearTimeout(to); heroEl.innerHTML = `<div class="noimg">📰</div>`; };
+  img.src = it.img;
+}
+
+function nextItem(){ idx = (idx + 1) % items.length; showCurrent(); }
+function restartRotation(){
+  if(rotateTimer) clearInterval(rotateTimer);
+  const bar = document.querySelector(".progress i");
+  bar.style.animation = "none"; bar.offsetHeight; bar.style.animation = null;
+  rotateTimer = setInterval(nextItem, CONFIG.rotateMs);
+}
+
+async function start(){
+  try{
+    items = await fetchMetropolesOnly();
+    idx = 0;
+    showCurrent();
+    restartRotation();
+  }catch(e){
+    console.error(e);
+    headlineEl.textContent = "Não foi possível carregar Metrópoles agora.";
+  }
+  if(feedTimer) clearInterval(feedTimer);
+  feedTimer = setInterval(async ()=>{
+    try{
+      const fresh = await fetchMetropolesOnly();
+      if(fresh && fresh.length){ items = fresh; idx = 0; showCurrent(); restartRotation(); }
+    }catch(_){}
+  }, CONFIG.refreshFeedMs);
+}
+start();
+
+setInterval(()=>{ if(!items || items.length===0){ start(); } }, 60000);
+</script>
+</body>
+</html>
